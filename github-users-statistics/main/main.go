@@ -7,7 +7,6 @@ import (
 	"github.com/stefka-sarafska/ChaosCamp-Go/github-users-statistics/users"
 	"log"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -46,34 +45,26 @@ func createTable(userNames []string) {
 	for _, name := range userNames {
 		user := &users.User{Name: name}
 		user.SetUserInfo()
-		data = append(data, []string{user.Name, strconv.Itoa(len(user.Repositories)), "Java -> 100\nCss ->50", strconv.Itoa(user.Followers), strconv.Itoa(user.GetUserForks()), "activity"})
+		userLanguages := user.GetAllUserLanguages()
+		calculatedLanguages := languages.CalculateLanguagesUsage(userLanguages)
+		topFiveLanguages := languages.GetTopFiveLanguages(calculatedLanguages)
+		languagesString := createStringOfLanguages(&topFiveLanguages)
+		data = append(data, []string{user.Name, strconv.Itoa(len(user.Repositories)), languagesString, strconv.Itoa(user.Followers), strconv.Itoa(user.GetUserForks())})
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"User", "Number of user repos", "Languages", "Followers", "Forks", "Activity by year"})
-	table.SetBorder(true)  // Set Border to false
+	table.SetHeader([]string{"User", "Number of user repos", "Languages", "Followers", "Forks"})
+	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 	table.AppendBulk(data) // Add Bulk Data
+	table.SetCenterSeparator("|")
+	table.SetRowLine(true)
 	table.Render()
 }
 
-//func getAllUserLanguages(user *users.User) []languages.Language{
-//	userRepos := user.Repositories
-//	var languages []languages.Language
-//	for _, repo := range userRepos {
-//		for _, language := range repo.Languages {
-//			languages = append(languages, language)
-//		}
-//	}
-//	return languages
-//}
-
-func getTopFiveLanguages(languages []languages.Language) []languages.Language {
-	sort.Slice(languages, func(i, j int) bool {
-		return languages[i].Usage < languages[j].Usage
-	})
-	if len(languages) > 5 {
-		topLanguages := languages[:len(languages)-5]
-		return topLanguages
+func createStringOfLanguages(lns *[]languages.Language) string {
+	languagesString := ""
+	for _, language := range *lns {
+		languagesString += language.Name + " -> " + strconv.Itoa(language.Usage) + ", "
 	}
-	return languages
+	return languagesString
 }
